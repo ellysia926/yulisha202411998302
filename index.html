@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寻找真爱 · 信号检测论交互式实验</title>
+<style>
+  :root {
+    --ink: #1f2937;
+    --sub: #6b7280;
+    --line: #e5e7eb;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --accent: #e11d63;
+    --accent-soft: #fce7f0;
+    --blue: #2563eb;
+    --teal: #0d9488;
+    --amber: #d97706;
+    --ok: #16a34a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 20px 80px; }
+  header.hero { text-align: center; padding: 26px 0 10px; }
+  header.hero h1 { font-size: 30px; letter-spacing: 1px; }
+  header.hero h1 .heart { color: var(--accent); }
+  header.hero p { color: var(--sub); margin-top: 6px; font-size: 14px; }
+  section.card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 26px 28px; margin-top: 22px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  section.card h2 {
+    font-size: 19px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+  }
+  section.card h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+    color: #fff; font-size: 14px; flex: none;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 760px){ .grid2,.grid4{ grid-template-columns: 1fr; } }
+  .param-box {
+    background: #fafbfc; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+    font-size: 14px;
+  }
+  .param-box b { color: var(--accent); }
+  .param-box ul { padding-left: 18px; margin-top: 6px; }
+  .param-box li { margin: 3px 0; }
+  .outcome { border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); font-size: 13px; }
+  .outcome .t { font-weight: 700; font-size: 14px; }
+  .outcome.hit   { background: #ecfdf5; border-color: #a7f3d0; } .outcome.hit .t { color: #059669; }
+  .outcome.miss  { background: #fef2f2; border-color: #fecaca; } .outcome.miss .t { color: #dc2626; }
+  .outcome.fa    { background: #fffbeb; border-color: #fde68a; } .outcome.fa .t { color: #d97706; }
+  .outcome.cr    { background: #eff6ff; border-color: #bfdbfe; } .outcome.cr .t { color: #2563eb; }
+
+  /* 游戏区 */
+  .game-top {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .diff-group { display: flex; gap: 8px; }
+  .diff-btn {
+    padding: 7px 18px; border-radius: 999px; border: 1.5px solid var(--line);
+    background: #fff; cursor: pointer; font-size: 14px; color: var(--sub); transition: all .15s;
+  }
+  .diff-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  #progress { font-size: 14px; color: var(--sub); min-width: 110px; text-align: right; }
+  #stage {
+    display: block; width: 100%; border-radius: 10px; border: 1px solid var(--line);
+    background: #eef1f5;
+  }
+  .game-bottom { display: flex; gap: 14px; margin-top: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  button.primary {
+    background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 34px; font-size: 16px; cursor: pointer; font-weight: 700; transition: transform .1s;
+  }
+  button.primary:hover { transform: translateY(-1px); }
+  button.primary:disabled { background: #d8dae0; cursor: not-allowed; transform: none; }
+  .resp-btn {
+    padding: 13px 42px; font-size: 17px; border-radius: 10px; cursor: pointer;
+    border: 2px solid var(--line); background: #fff; font-weight: 700; transition: all .12s;
+  }
+  .resp-btn.yes { border-color: var(--accent); color: var(--accent); }
+  .resp-btn.yes:hover { background: var(--accent); color: #fff; }
+  .resp-btn.no { border-color: #94a3b8; color: #475569; }
+  .resp-btn.no:hover { background: #475569; color: #fff; }
+  .key-hint { font-size: 12px; color: var(--sub); font-weight: 400; margin-left: 6px; }
+  #status-line { text-align: center; color: var(--sub); font-size: 14px; margin-top: 10px; min-height: 22px; }
+
+  /* 结果区 */
+  .stat-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin: 14px 0; }
+  @media (max-width: 760px){ .stat-cards { grid-template-columns: repeat(2,1fr); } }
+  .stat-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; text-align: center; }
+  .stat-card .v { font-size: 26px; font-weight: 800; }
+  .stat-card .k { font-size: 12px; color: var(--sub); }
+  .stat-card.d .v { color: var(--blue); } .stat-card.c .v { color: var(--teal); }
+  .stat-card.a .v { color: var(--ok); } .stat-card.b .v { color: var(--amber); }
+  .stat-card.y .v { color: #7c3aed; }
+  #interpret { background: #fafbfc; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: 14px; margin-top: 12px; }
+  table.trial-log { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+  table.trial-log th, table.trial-log td { border: 1px solid var(--line); padding: 5px 8px; text-align: center; }
+  table.trial-log th { background: #f3f4f6; }
+  .log-scroll { max-height: 260px; overflow: auto; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 12px; }
+  .tag.sig { background: var(--accent-soft); color: var(--accent); }
+  .tag.noise { background: #f1f5f9; color: #64748b; }
+  .tag.ok { background: #ecfdf5; color: #059669; }
+  .tag.err { background: #fef2f2; color: #dc2626; }
+
+  /* 可视化区 */
+  .viz-controls { display: flex; gap: 26px; flex-wrap: wrap; margin: 14px 0 6px; font-size: 14px; }
+  .viz-controls label { display: flex; align-items: center; gap: 10px; }
+  input[type=range] { accent-color: var(--accent); width: 200px; }
+  .viz-val { font-weight: 800; color: var(--accent); min-width: 46px; display: inline-block; }
+  canvas.viz { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: #fff; margin-top: 8px; }
+  .legend { display: flex; gap: 22px; font-size: 13px; color: var(--sub); margin-top: 8px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .note { font-size: 13px; color: var(--sub); margin-top: 10px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>人海中寻找<span class="heart">真爱</span> —— 信号检测论实验</h1>
+    <p>工程心理学 · 作业一 ｜ 真爱 = 唯一拥有「完整的心」的人 ｜ 全程无即时反馈，结果最后统一报告</p>
+  </header>
+
+  <!-- ========== 01 场景与参数 ========== -->
+  <section class="card">
+    <h2><span class="num">1</span>场景与参数定义</h2>
+    <div class="grid2">
+      <div class="param-box">
+        <b>所有人外观完全一致，只有「心的完整程度」不同，共三种状态</b>
+        <ul>
+          <li><b>完整的心（100%）→ 真爱（信号 S）</b>：9 人中唯一一个胸口是完整的心的人</li>
+          <li><b>3/4 颗心（75%）→ 干扰项</b>：右侧约 1/4 被裁掉，与完整的心只有细微差别</li>
+          <li><b>半颗心（50%）→ 干扰项（噪声 N）</b>：右侧一半被裁掉，较为明显</li>
+        </ul>
+        没有任何颜色或亮度线索，被试只能逐一观察每个人胸口的心形是否完整，
+        难度体现在人群的呈现时间上（越难呈现越短）。
+        <ul>
+          <li>先验概率 P(S) = P(N) = <b>0.5</b>（击中与虚报同等重要）</li>
+          <li>每屏 <b>3 × 3 = 9 人</b>，随机抖动排布；干扰项中 4 人为 3/4 颗心、4 人为半颗心</li>
+          <li>心形宽度 ≈ 人身高的 <b>18%</b>（约 32px），位于胸口位置，需注视才能看清是否完整</li>
+        </ul>
+      </div>
+      <div class="param-box">
+        <b>四种结果的含义（红色系为信号相关）</b>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+          <div class="outcome hit"><div class="t">击中 Hit</div>有真爱，你判断「有」：找到了真爱 💘</div>
+          <div class="outcome miss"><div class="t">漏报 Miss</div>有真爱，你判断「没有」：错过真爱</div>
+          <div class="outcome fa"><div class="t">虚报 False Alarm</div>没有真爱，你判断「有」：错把路人当真爱</div>
+          <div class="outcome cr"><div class="t">正确拒绝 CR</div>没有真爱，你判断「没有」：清醒脱身</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 02 交互式检测游戏 ========== -->
+  <section class="card">
+    <h2><span class="num">2</span>检测游戏（共 24 试次）</h2>
+    <div class="game-top">
+      <div class="diff-group" id="diff-group">
+        <button class="diff-btn" data-lv="easy">容易</button>
+        <button class="diff-btn active" data-lv="medium">中等</button>
+        <button class="diff-btn" data-lv="hard">困难</button>
+      </div>
+      <div id="progress">准备就绪</div>
+    </div>
+    <p class="note" style="margin:0 0 10px;">实验过程中<b>不提供即时正误反馈</b>，每答完一题画面直接回到注视点；全部 24 试次结束后，统一报告 P(Hit)、P(FA)、d′、判断标准 c、β 等结果。难度越高，人群呈现时间越短（容易 1.5s / 中等 1.0s / 困难 0.5s）。</p>
+
+    <canvas id="stage" width="900" height="640"></canvas>
+
+    <div class="game-bottom">
+      <button class="primary" id="btn-start">开始实验</button>
+      <button class="resp-btn yes hidden" id="btn-yes">有真爱<span class="key-hint">[F]</span></button>
+      <button class="resp-btn no hidden" id="btn-no">没有<span class="key-hint">[J]</span></button>
+    </div>
+    <div id="status-line">选择难度后点击「开始实验」。人群出现后请仔细查看，判断：出现真爱了吗？</div>
+  </section>
+
+  <!-- ========== 03 结果与 SDT 计算 ========== -->
+  <section class="card hidden" id="sec-result">
+    <h2><span class="num">3</span>结果与 SDT 计算（实验结束后统一报告）</h2>
+    <div class="grid4">
+      <div class="outcome hit"><div class="t">击中 Hit</div><div class="v" id="r-hit">0</div><div class="k" id="r-hit-p">P(Hit) = -</div></div>
+      <div class="outcome miss"><div class="t">漏报 Miss</div><div class="v" id="r-miss">0</div><div class="k" id="r-miss-p">P(Miss) = -</div></div>
+      <div class="outcome fa"><div class="t">虚报 FA</div><div class="v" id="r-fa">0</div><div class="k" id="r-fa-p">P(FA) = -</div></div>
+      <div class="outcome cr"><div class="t">正确拒绝 CR</div><div class="v" id="r-cr">0</div><div class="k" id="r-cr-p">P(CR) = -</div></div>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card d"><div class="v" id="s-dp">-</div><div class="k">辨别力 d′ = z(H) − z(FA)</div></div>
+      <div class="stat-card c"><div class="v" id="s-c">-</div><div class="k">判断标准 c = −[z(H)+z(FA)]/2</div></div>
+      <div class="stat-card b"><div class="v" id="s-beta">-</div><div class="k">似然比 β</div></div>
+      <div class="stat-card y"><div class="v" id="s-yesrate">-</div><div class="k">回答「有真爱」的比例</div></div>
+      <div class="stat-card a"><div class="v" id="s-acc">-</div><div class="k">总体正确率</div></div>
+    </div>
+    <div id="interpret"></div>
+    <h2 style="margin-top:22px; font-size:16px;"><span class="num" style="background:var(--blue)">·</span>逐试次记录</h2>
+    <div class="log-scroll">
+      <table class="trial-log">
+        <thead><tr><th>试次</th><th>实际信号</th><th>你的判断</th><th>结果</th><th>反应时 (ms)</th></tr></thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========== 04 可视化与 ROC（加分项） ========== -->
+  <section class="card hidden" id="sec-viz">
+    <h2><span class="num">4</span>交互式概念可视化（加分项）</h2>
+
+    <p style="font-size:14px; color:var(--sub);">拖动滑块，观察信号/噪声分布的分离程度（d′）与判断标准（c）如何改变击中率与虚报率。</p>
+    <div class="viz-controls">
+      <label>d′（敏感度）<input type="range" id="sl-dp" min="0" max="4" step="0.1" value="1.5">
+        <span class="viz-val" id="sl-dp-v">1.5</span></label>
+      <label>c（判断标准）<input type="range" id="sl-c" min="-2" max="2" step="0.05" value="0">
+        <span class="viz-val" id="sl-c-v">0.00</span></label>
+      <button class="diff-btn" id="btn-use-mine">载入我的实验结果</button>
+    </div>
+    <canvas id="cv-dist" class="viz" width="940" height="280"></canvas>
+    <div class="legend">
+      <span><i style="background:#0ea5e9;"></i>噪声分布 N(0, 1)</span>
+      <span><i style="background:#f43f5e;"></i>信号分布 N(d′, 1)</span>
+      <span><i style="background:#f59e0b;"></i>虚报区（噪声 &gt; 标准）</span>
+      <span><i style="background:#14b8a6;"></i>击中区（信号 &gt; 标准）</span>
+    </div>
+
+    <h2 style="margin-top:24px; font-size:16px;"><span class="num" style="background:var(--teal)">·</span>ROC 曲线（红点为你的实验操作点）</h2>
+    <canvas id="cv-roc" class="viz" width="460" height="440" style="max-width:480px;"></canvas>
+    <p class="note">ROC 曲线为等敏感度 d′ 下，随判断标准 c 移动得到的 (P(FA), P(Hit)) 轨迹；对角线为 d′ = 0（纯猜测）。曲线越靠左上角，辨别力越强。</p>
+  </section>
+
+</div>
+
+<script>
+/* =====================================================================
+ * 寻找真爱 · 信号检测论交互式实验
+ * 纯前端实现：HTML + CSS + JavaScript（Canvas 绘制人群）
+ * ===================================================================== */
+
+/* ---------- 全局参数 ---------- */
+const CONFIG = {
+  trials: 24,            // 试次总数（>= 20）
+  pSignal: 0.5,          // 先验概率 P(S)
+  cols: 3, rows: 3,      // 人群网格 3 x 3 = 9 人
+  personScale: 2.5,      // 人物缩放：基准人身高约 68px → 约 170px
+  fixationMs: 400,       // 注视点时长（试次间隔）
+  canvasW: 900,
+  canvasH: 640,
+  bg: '#eef1f5',
+  // 难度等级：difficulty 越高，人群呈现时间越短（越难找出真爱）
+  // nQuarter 控制干扰项中「3/4 颗心」的数量（其余干扰项为「半颗心」），三档保持一致以让难度纯粹由时间决定
+  levels: {
+    easy:   { label: '容易', duration: 1500, nQuarter: 4 },
+    medium: { label: '中等', duration: 1000, nQuarter: 4 },
+    hard:   { label: '困难', duration: 500,  nQuarter: 4 },
+  },
+};
+
+/* ---------- 统计工具 ---------- */
+/** 正态分布累积函数 Φ(x)（Abramowitz-Stegun 误差函数近似） */
+function normCdf(x) {
+  const s = x < 0 ? -1 : 1, ax = Math.abs(x) / Math.SQRT2;
+  const t = 1 / (1 + 0.3275911 * ax);
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592)
+              * Math.exp(-ax * ax) * t;
+  return 0.5 * (1 + s * y);
+}
+/** 标准正态的反函数 z(p)（Acklam 算法） */
+function invNorm(p) {
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.3577518672690, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const pLow = 0.02425, pHigh = 1 - pLow;
+  let q, r;
+  if (p < pLow) { q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if (p > pHigh) { q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - 0.5; r = q * q;
+  return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+         (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+const rand  = (lo, hi) => lo + Math.random() * (hi - lo);
+const randI = (lo, hi) => Math.floor(rand(lo, hi + 1));
+function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = randI(0, i); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+/* ---------- Canvas 初始化（高分屏适配） ---------- */
+const stage = document.getElementById('stage');
+const sctx = stage.getContext('2d');
+(function fitDPR(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.width, h = cv.height;
+  cv.style.maxWidth = w + 'px';
+  cv.width = w * dpr; cv.height = h * dpr;
+  cv.getContext('2d').scale(dpr, dpr);
+})(stage);
+
+/* ---------- 绘制：心形与人形 ---------- */
+/** 画心形路径（x,y 为中心，s 为半宽） */
+function heartPath(ctx, x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + s * 0.95);
+  ctx.bezierCurveTo(x - s * 1.35, y - s * 0.15, x - s * 0.75, y - s * 1.15, x, y - s * 0.4);
+  ctx.bezierCurveTo(x + s * 0.75, y - s * 1.15, x + s * 1.35, y - s * 0.15, x, y + s * 0.95);
+  ctx.closePath();
+}
+/**
+ * 画一个人（以「人的中心」为坐标原点，整体按 CONFIG.personScale 放大）
+ * 所有人的灰色、人形、大小完全一致，唯一的区分特征就是「心的完整程度」：
+ *   1.00 → 完整的心 = 真爱（信号 S）
+ *   0.75 → 3/4 颗心（右侧约 1/4 被裁掉）= 干扰项
+ *   0.50 → 半颗心（右侧一半被裁掉）= 干扰项
+ * @param cx,cy     人的中心点
+ * @param heartLevel 心的完整度：1 | 0.75 | 0.5
+ * @param seed      用于明度微抖动，避免逐像素比较
+ */
+function drawPerson(ctx, cx, cy, heartLevel, seed) {
+  const jitter = ((seed * 7919) % 30) / 10 - 1.5;           // 每人 ±1.5% 明度抖动（所有人同为灰色）
+  const bodyL = 52 + jitter;
+  const hue = 214 + ((seed * 13) % 10);                     // 色相统一：冷灰蓝
+  const bodyColor = `hsl(${hue}, 14%, ${bodyL}%)`;
+  const heartColor = 'hsl(348, 52%, 60%)';                  // 心形颜色对所有人一致，只区分形状
+  const s = 8;                                              // 心半宽 8（基准单位）→ 心宽约 32px ≈ 人高(180px)的 18%
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(CONFIG.personScale, CONFIG.personScale);
+
+  // 身体（圆角梯形）
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(-15, -13);
+  ctx.lineTo(15, -13);
+  ctx.quadraticCurveTo(18, -6, 18, 28);
+  ctx.quadraticCurveTo(0, 36, -18, 28);
+  ctx.quadraticCurveTo(-18, -6, -15, -13);
+  ctx.closePath();
+  ctx.fill();
+  // 脖子与头
+  ctx.fillRect(-4, -18, 8, 6);
+  ctx.beginPath();
+  ctx.arc(0, -25, 11, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 胸口的心：按 heartLevel 从左往右保留相应比例（1=完整 / 0.75=缺右 1/4 / 0.5=缺右半）
+  ctx.fillStyle = heartColor;
+  if (heartLevel >= 1) {
+    heartPath(ctx, 0, -2, s);
+    ctx.fill();
+  } else {
+    const xEdge = s * 0.803;                                 // 心形的实际水平半宽（贝塞尔实测 ≈0.80s）
+    const cut = -xEdge + 2 * xEdge * heartLevel;             // 按实际宽度比例确定竖直裁切线
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-s * 1.6, -2 - s * 1.6, cut + s * 1.6, s * 3.2);// 只保留左侧 heartLevel 比例
+    ctx.clip();
+    heartPath(ctx, 0, -2, s);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+/** 绘制整屏人群（所有人外观完全一致，只有真爱的心是完整的） */
+function drawCrowd(crowd) {
+  sctx.clearRect(0, 0, CONFIG.canvasW, CONFIG.canvasH);
+  sctx.fillStyle = CONFIG.bg;
+  sctx.fillRect(0, 0, CONFIG.canvasW, CONFIG.canvasH);
+  for (const p of crowd) {
+    drawPerson(sctx, p.x, p.y, p.heartLevel, p.seed);
+  }
+}
+/**
+ * 生成一屏人群，共 9 人（3 x 3）：
+ *   真爱（信号）＝ 唯一「完整的心」（heartLevel = 1）
+ *   干扰项有两种心的状态：3/4 颗心（0.75）与半颗心（0.5）
+ * 人形、颜色、大小完全一致，唯一差别就是心的完整程度。
+ * 信号试次：随机 1 人为完整的心；噪声试次：9 人全部为 0.75 / 0.5 两种残缺心。
+ */
+function makeCrowd(isSignal, lv) {
+  const crowd = [];
+  const cw = CONFIG.canvasW / CONFIG.cols, ch = CONFIG.canvasH / CONFIG.rows;
+  const slots = [];
+  for (let r = 0; r < CONFIG.rows; r++)
+    for (let c = 0; c < CONFIG.cols; c++)
+      slots.push({ x: cw * (c + 0.5) + rand(-24, 24), y: ch * (r + 0.5) + rand(-10, 10) });
+  shuffle(slots);
+
+  let idx = 0;
+  const put = (heartLevel) => {
+    const sl = slots[idx++];
+    crowd.push({ x: sl.x, y: sl.y, heartLevel, seed: randI(0, 99999) });
+  };
+  if (isSignal) put(1);                                  // 唯一的真爱：完整的心
+  // 干扰项：nQuarter 个「3/4 颗心」+ 其余「半颗心」；slots 已打乱，故位置随机
+  const nRest = slots.length - idx;
+  const nQuarter = Math.min(lv.nQuarter, nRest);
+  for (let i = 0; i < nRest; i++) put(i < nQuarter ? 0.75 : 0.5);
+  return crowd;
+}
+
+/* ---------- 实验流程 ---------- */
+const $ = id => document.getElementById(id);
+let difficulty = 'medium';
+let trials = [];        // 每试次 {isSignal, saidYes, rt}
+let trialIdx = 0, curTrial = null, phase = 'idle';
+let timerId = null;
+let seqCache = null;    // 平衡序列（12 信号 / 12 噪声），实验开始时生成一次并缓存
+
+document.getElementById('diff-group').addEventListener('click', e => {
+  if (phase !== 'idle' && phase !== 'done') return;
+  const btn = e.target.closest('.diff-btn'); if (!btn) return;
+  difficulty = btn.dataset.lv;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+});
+
+/** 生成 24 试次的信号序列（恰好一半有信号） */
+function buildSequence() {
+  const seq = Array(CONFIG.trials / 2).fill(true).concat(Array(CONFIG.trials / 2).fill(false));
+  return shuffle(seq);
+}
+
+function startExperiment() {
+  trials = []; trialIdx = 0;
+  seqCache = buildSequence();          // 一次性生成 12 信号 / 12 噪声的平衡序列
+  $('btn-start').disabled = true;
+  $('sec-result').classList.add('hidden');
+  $('sec-viz').classList.add('hidden');
+  nextTrial();
+}
+
+function nextTrial() {
+  if (trialIdx >= seqCache.length) { finishExperiment(); return; }
+  curTrial = { isSignal: seqCache[trialIdx] };
+  phase = 'fixation';
+  $('progress').textContent = `第 ${trialIdx + 1} / ${CONFIG.trials} 试次`;
+  $('status-line').textContent = '';
+  drawFixation();                      // 试次之间只呈现注视点
+  timerId = setTimeout(showStimulus, CONFIG.fixationMs);
+}
+
+function drawFixation() {
+  sctx.clearRect(0, 0, CONFIG.canvasW, CONFIG.canvasH);
+  sctx.fillStyle = CONFIG.bg; sctx.fillRect(0, 0, CONFIG.canvasW, CONFIG.canvasH);
+  sctx.fillStyle = '#334155'; sctx.font = '700 48px sans-serif';
+  sctx.textAlign = 'center'; sctx.textBaseline = 'middle';
+  sctx.fillText('+', CONFIG.canvasW / 2, CONFIG.canvasH / 2);
+}
+
+function showStimulus() {
+  phase = 'stimulus';
+  const lv = CONFIG.levels[difficulty];
+  curTrial.lv = lv;
+  curTrial.crowd = makeCrowd(curTrial.isSignal, lv);
+  drawCrowd(curTrial.crowd);
+  $('status-line').textContent = '';
+  timerId = setTimeout(askResponse, lv.duration);   // 刺激限时，超时自动遮蔽
+}
+
+function askResponse() {
+  phase = 'response';
+  curTrial.stimOff = performance.now();
+  // 遮蔽画面：只留杂乱灰点，防止回视
+  sctx.clearRect(0, 0, CONFIG.canvasW, CONFIG.canvasH);
+  sctx.fillStyle = CONFIG.bg; sctx.fillRect(0, 0, CONFIG.canvasW, CONFIG.canvasH);
+  for (let i = 0; i < 340; i++) {
+    sctx.fillStyle = `hsl(215, 10%, ${rand(60, 90)}%)`;
+    sctx.beginPath();
+    sctx.arc(rand(0, CONFIG.canvasW), rand(0, CONFIG.canvasH), rand(1, 4.5), 0, Math.PI * 2);
+    sctx.fill();
+  }
+  sctx.fillStyle = '#334155'; sctx.font = '700 28px sans-serif';
+  sctx.textAlign = 'center'; sctx.textBaseline = 'middle';
+  sctx.fillText('刚才的人群里，出现真爱了吗？', CONFIG.canvasW / 2, CONFIG.canvasH / 2 - 30);
+  sctx.font = '400 18px sans-serif'; sctx.fillStyle = '#64748b';
+  sctx.fillText('按 [F] 有真爱    按 [J] 没有', CONFIG.canvasW / 2, CONFIG.canvasH / 2 + 12);
+  sctx.font = '400 15px sans-serif'; sctx.fillStyle = '#94a3b8';
+  sctx.fillText('（作答后直接进入下一题，结果在实验结束时统一报告）', CONFIG.canvasW / 2, CONFIG.canvasH / 2 + 52);
+  $('btn-yes').classList.remove('hidden');
+  $('btn-no').classList.remove('hidden');
+  $('status-line').textContent = '凭你的整体印象作答即可。';
+}
+
+function recordResponse(saidYes) {
+  if (phase !== 'response') return;
+  phase = 'iti';
+  curTrial.saidYes = saidYes;
+  curTrial.rt = Math.round(performance.now() - curTrial.stimOff);
+  trials.push(curTrial);
+  $('btn-yes').classList.add('hidden');
+  $('btn-no').classList.add('hidden');
+  $('status-line').textContent = '';
+  trialIdx++;
+  nextTrial();          // 直接进入下一试次：画面只呈现注视点，不显示任何作答提示
+}
+
+/* ---------- SDT 计算 ---------- */
+function computeSDT() {
+  const nS = trials.filter(t => t.isSignal).length;
+  const nN = trials.length - nS;
+  const hit = trials.filter(t => t.isSignal && t.saidYes).length;
+  const fa  = trials.filter(t => !t.isSignal && t.saidYes).length;
+  const nYes = hit + fa;                                   // 回答「有真爱」的总次数
+  // 对数线性校正，避免极端比例为 0/1 时 z 值无穷大
+  const pH = (hit + 0.5) / (nS + 1);
+  const pF = (fa + 0.5) / (nN + 1);
+  const zH = invNorm(pH), zF = invNorm(pF);
+  return {
+    hit, miss: nS - hit, fa, cr: nN - fa, nS, nN, nYes,
+    yesRate: nYes / trials.length,
+    pH, pF,
+    dPrime: zH - zF,
+    c: -(zH + zF) / 2,
+    beta: Math.exp((zF * zF - zH * zH) / 2),
+    acc: (hit + (nN - fa)) / trials.length,
+    zH, zF,
+  };
+}
+
+function finishExperiment() {
+  phase = 'done';
+  $('btn-start').disabled = false;
+  $('btn-start').textContent = '再做一次';
+  $('progress').textContent = '实验结束';
+  $('status-line').textContent = '实验完成，请查看下方结果与可视化。';
+  renderResults(computeSDT());
+}
+
+function renderResults(r) {
+  $('sec-result').classList.remove('hidden');
+  $('sec-viz').classList.remove('hidden');
+  $('r-hit').textContent = r.hit;   $('r-hit-p').textContent = `P(Hit) = ${r.pH.toFixed(3)}`;
+  $('r-miss').textContent = r.miss; $('r-miss-p').textContent = `P(Miss) = ${(1 - r.pH).toFixed(3)}`;
+  $('r-fa').textContent = r.fa;     $('r-fa-p').textContent = `P(FA) = ${r.pF.toFixed(3)}`;
+  $('r-cr').textContent = r.cr;     $('r-cr-p').textContent = `P(CR) = ${(1 - r.pF).toFixed(3)}`;
+  $('s-dp').textContent = r.dPrime.toFixed(2);
+  $('s-c').textContent = r.c.toFixed(2);
+  $('s-beta').textContent = r.beta.toFixed(2);
+  $('s-yesrate').textContent = (r.yesRate * 100).toFixed(1) + '%';
+  $('s-acc').textContent = (r.acc * 100).toFixed(1) + '%';
+
+  const dpDesc = r.dPrime >= 2.5 ? '辨别力很强，你几乎总能区分真爱与路人'
+    : r.dPrime >= 1.2 ? '辨别力中等，真爱与干扰对你有一定可分辨性'
+    : r.dPrime >= 0.5 ? '辨别力较弱，判断在很大程度上接近猜测'
+    : '辨别力接近 0，你基本是在瞎猜（信号与噪声难以区分）';
+  const cDesc = r.c > 0.2 ? '你的判断标准偏保守——更倾向回答「没有」，不易虚报但容易漏报真爱'
+    : r.c < -0.2 ? '你的判断标准偏宽松——更倾向回答「有」，容易找到真爱但也常错把路人当真爱'
+    : '你的判断标准居中，没有明显的「有/没有」倾向';
+  const cZeroNote = Math.abs(r.c) < 0.005
+    ? `本次 <b>c 恰好等于 0</b>：你一共回答「有真爱」<b>${r.nYes}</b> 次，正好是信号与噪声试次各 ${r.nS} 次时的一半，此时 z(H) = −z(FA)，<b>β 也正好等于 1</b>——这不是计算错误，而是「零偏向」的标准定义。`
+    : `你一共回答「有真爱」<b>${r.nYes}</b> 次（${(r.yesRate * 100).toFixed(1)}%）。`;
+  $('interpret').innerHTML =
+    `<b>结果解读：</b>${dpDesc}。${cDesc}。<br>
+     <b>关于 c（判断标准）：</b>${cZeroNote}
+     本实验信号与噪声试次各 ${r.nS} 次，因此 c 完全由你回答「有」的总比例决定：
+     回答「有」恰好 ${r.nS} 次（50%）→ <b>c = 0</b>；多于 ${r.nS} 次 → c &lt; 0（偏宽松）；少于 ${r.nS} 次 → c &gt; 0（偏保守）。
+     P(S) = 0.5 时，c ≈ 0 正是理论上收益最高的中性策略。<br>
+     <b>关于 d′（辨别力）：</b>d′ = z(H) − z(FA)，只反映你对「完整的心与残缺的心」的分辨能力，与回答偏向无关；
+     它不会因为你倾向多说「有」而变高，因此是评价辨别力的更纯粹的指标。`;
+
+  // 逐试次日志
+  const body = $('log-body'); body.innerHTML = '';
+  trials.forEach((t, i) => {
+    const correct = t.saidYes === t.isSignal;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i + 1}</td>
+      <td><span class="tag ${t.isSignal ? 'sig' : 'noise'}">${t.isSignal ? '有真爱' : '无真爱'}</span></td>
+      <td>${t.saidYes ? '有' : '没有'}</td>
+      <td><span class="tag ${correct ? 'ok' : 'err'}">${
+        t.isSignal ? (t.saidYes ? '击中' : '漏报') : (t.saidYes ? '虚报' : '正确拒绝')
+      }</span></td>
+      <td>${t.rt}</td>`;
+    body.appendChild(tr);
+  });
+
+  // 同步可视化滑块为实测值并绘制（d′ 与 c 都用实测结果）
+  $('sl-dp').value = Math.min(4, Math.max(0, r.dPrime));
+  $('sl-dp-v').textContent = Math.min(4, Math.max(0, r.dPrime)).toFixed(1);
+  $('sl-c').value = Math.min(2, Math.max(-2, r.c));
+  $('sl-c-v').textContent = (+$('sl-c').value).toFixed(2);
+  drawDist(); drawROC(r);
+}
+
+/* ---------- 事件绑定 ---------- */
+$('btn-start').addEventListener('click', startExperiment);
+$('btn-yes').addEventListener('click', () => recordResponse(true));
+$('btn-no').addEventListener('click', () => recordResponse(false));
+document.addEventListener('keydown', e => {
+  if (phase !== 'response') return;
+  const k = e.key.toLowerCase();
+  if (k === 'f') recordResponse(true);
+  if (k === 'j') recordResponse(false);
+});
+
+/* =====================================================================
+ * 加分项：交互式可视化（分布图 + ROC 曲线）
+ * ===================================================================== */
+function setupVizCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = +cv.getAttribute('width'), h = +cv.getAttribute('height');
+  cv.style.maxWidth = w + 'px';
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+const distCtx = setupVizCanvas(document.getElementById('cv-dist'));
+const rocCtx  = setupVizCanvas(document.getElementById('cv-roc'));
+const normPdf = (x, mu) => Math.exp(-((x - mu) ** 2) / 2) / Math.sqrt(2 * Math.PI);
+
+/** 信号/噪声双分布 + 判断标准 c 的动态面积图 */
+function drawDist() {
+  const W = 940, H = 280, padL = 46, padR = 20, padT = 30, padB = 46;
+  const dp = +$('sl-dp').value, c = +$('sl-c').value;
+  const xMin = -4, xMax = Math.max(4, dp + 4);
+  const X = x => padL + (x - xMin) / (xMax - xMin) * (W - padL - padR);
+  const Y = y => H - padB - y / 0.46 * (H - padT - padB);
+  const ctx = distCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  const curve = (mu) => { ctx.beginPath(); for (let x = xMin; x <= xMax; x += 0.05) {
+    const px = X(x), py = Y(normPdf(x, mu));
+    x === xMin ? ctx.moveTo(px, py) : ctx.lineTo(px, py); } };
+
+  // 击中区（信号 > c）
+  ctx.beginPath(); ctx.moveTo(X(Math.max(c, xMin)), Y(0));
+  for (let x = Math.max(c, xMin); x <= xMax; x += 0.05) ctx.lineTo(X(x), Y(normPdf(x, dp)));
+  ctx.lineTo(X(xMax), Y(0)); ctx.closePath();
+  ctx.fillStyle = 'rgba(20,184,166,.30)'; ctx.fill();
+  // 虚报区（噪声 > c）
+  ctx.beginPath(); ctx.moveTo(X(Math.max(c, xMin)), Y(0));
+  for (let x = Math.max(c, xMin); x <= xMax; x += 0.05) ctx.lineTo(X(x), Y(normPdf(x, 0)));
+  ctx.lineTo(X(xMax), Y(0)); ctx.closePath();
+  ctx.fillStyle = 'rgba(245,158,11,.30)'; ctx.fill();
+
+  // 曲线
+  ctx.lineWidth = 2.4; ctx.strokeStyle = '#0ea5e9'; curve(0); ctx.stroke();
+  ctx.strokeStyle = '#f43f5e'; curve(dp); ctx.stroke();
+
+  // 坐标轴
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(padL, Y(0)); ctx.lineTo(W - padR, Y(0)); ctx.stroke();
+  ctx.fillStyle = '#64748b'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  for (let t = Math.ceil(xMin); t <= xMax; t++) ctx.fillText(t, X(t), Y(0) + 18);
+  ctx.fillText('感觉强度（噪声均值 0，信号均值 d′）', (padL + W - padR) / 2, H - 8);
+  ctx.save(); ctx.translate(14, (padT + H - padB) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('概率密度', 0, 0); ctx.restore();
+
+  // 判断标准 c 的竖线
+  ctx.strokeStyle = '#111827'; ctx.lineWidth = 2; ctx.setLineDash([7, 5]);
+  ctx.beginPath(); ctx.moveTo(X(c), padT - 6); ctx.lineTo(X(c), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#111827'; ctx.font = '700 14px sans-serif';
+  ctx.fillText(`判断标准 c = ${c.toFixed(2)}`, X(c), padT - 14);
+
+  // 实时数值
+  const pH = 1 - normCdf(c - dp), pF = 1 - normCdf(c);
+  ctx.font = '700 15px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillStyle = '#0d9488'; ctx.fillText(`理论击中率 P(Hit) = ${(pH * 100).toFixed(1)}%`, W - padR - 8, padT + 16);
+  ctx.fillStyle = '#d97706'; ctx.fillText(`理论虚报率 P(FA) = ${(pF * 100).toFixed(1)}%`, W - padR - 8, padT + 38);
+  ctx.fillStyle = '#64748b'; ctx.font = '13px sans-serif';
+  ctx.fillText(`d′ = ${(pH > 0 && pF > 0) ? (invNorm(pH) - invNorm(pF)).toFixed(2) : '∞'}`, W - padR - 8, padT + 60);
+}
+$('sl-dp').addEventListener('input', () => { $('sl-dp-v').textContent = (+$('sl-dp').value).toFixed(1); drawDist(); });
+$('sl-c').addEventListener('input', () => { $('sl-c-v').textContent = (+$('sl-c').value).toFixed(2); drawDist(); });
+$('btn-use-mine').addEventListener('click', () => {
+  const r = computeSDT();
+  $('sl-dp').value = Math.min(4, Math.max(0, r.dPrime));
+  $('sl-dp-v').textContent = (+$('sl-dp').value).toFixed(1);
+  $('sl-c').value = Math.min(2, Math.max(-2, r.c));
+  $('sl-c-v').textContent = (+$('sl-c').value).toFixed(2);
+  drawDist(); drawROC(r);
+});
+
+/** ROC 曲线 + 实验操作点 */
+function drawROC(r) {
+  const W = 460, H = 440, pad = 52;
+  const X = v => pad + v * (W - pad - 16);
+  const Y = v => H - pad - v * (H - pad - 20);
+  const ctx = rocCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  // 网格与坐标轴
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  for (let t = 0; t <= 1.001; t += 0.25) {
+    ctx.beginPath(); ctx.moveTo(X(t), Y(0)); ctx.lineTo(X(t), Y(1)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0), Y(t)); ctx.lineTo(X(1), Y(t)); ctx.stroke();
+  }
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(1), Y(0)); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(0), Y(1)); ctx.stroke();
+  ctx.fillStyle = '#64748b'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  for (let t = 0; t <= 1.001; t += 0.25) {
+    ctx.fillText(t.toFixed(2), X(t), Y(0) + 18);
+    ctx.textAlign = 'right'; ctx.fillText(t.toFixed(2), X(0) - 8, Y(t) + 4); ctx.textAlign = 'center';
+  }
+  ctx.fillText('P(FA) 虚报率', (X(0) + X(1)) / 2, H - 12);
+  ctx.save(); ctx.translate(16, (Y(0) + Y(1)) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('P(Hit) 击中率', 0, 0); ctx.restore();
+
+  // 等敏感度 ROC 曲线族
+  const rocCurve = (dp, color, lw) => {
+    ctx.beginPath();
+    for (let c = -3.5; c <= 3.5; c += 0.04) {
+      const fa = 1 - normCdf(c), h = 1 - normCdf(c - dp);
+      const px = X(fa), py = Y(h);
+      c === -3.5 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke();
+  };
+  for (const dp of [0, 1, 2, 3]) rocCurve(dp, '#cbd5e1', 1.4);
+  ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif';
+  ctx.fillText('d′=0', X(0.62), Y(0.55)); ctx.fillText('d′=1', X(0.30), Y(0.62));
+  ctx.fillText('d′=2', X(0.135), Y(0.72)); ctx.fillText('d′=3', X(0.062), Y(0.80));
+  if (r) rocCurve(r.dPrime, '#2563eb', 2.6);
+
+  // 操作点
+  if (r) {
+    ctx.fillStyle = '#e11d63';
+    ctx.beginPath(); ctx.arc(X(r.pF), Y(r.pH), 6.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e11d63'; ctx.font = '700 13px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(`你的操作点 (FA=${r.pF.toFixed(2)}, Hit=${r.pH.toFixed(2)})`, X(r.pF) + 10, Y(r.pH) - 8);
+  }
+}
+drawDist(); drawROC(null);   // 初始绘制
+</script>
+</body>
+</html>
